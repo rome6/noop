@@ -98,10 +98,14 @@ public struct StoreReader: Sendable {
     ///
     /// Deriving both sides from one function is the point. Spelling the union out twice is what let them
     /// disagree, and a future namespace added to the read alone would reintroduce exactly this bug.
+    ///
+    /// Android's Health Connect import banks its exercise sessions under "health-connect", its own source
+    /// beside "apple-health". Without it here every Workouts, Training Load and session read on Android
+    /// skipped them while Today, which reads Room, still showed them.
     public static func workoutNamespaces(rawIds: [String]) -> [String] {
         deletableWorkoutNamespaces(rawIds: rawIds)
-            + [WorkoutSource.appleHealthSource, "lifting", WorkoutSource.hevySource, "activity-file",
-               WorkoutSource.ouraSource]
+            + [WorkoutSource.appleHealthSource, MetricResolver.healthConnectSource, "lifting",
+               WorkoutSource.hevySource, "activity-file", WorkoutSource.ouraSource]
     }
 
     /// Daily-metric rows across the imported union for a day range, DEDUPED per day with the ACTIVE STRAP

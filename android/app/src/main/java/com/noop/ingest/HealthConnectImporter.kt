@@ -269,6 +269,56 @@ object HealthConnectImporter {
     private fun prefs(context: Context) =
         context.getSharedPreferences(NoopPrefs.NAME, Context.MODE_PRIVATE)
 
+    // MARK: - Workout filter
+    //
+    // Health Connect holds every app's exercise sessions, including the walks Google Fit detects on its
+    // own. Imported workouts are read-only in NOOP (no hide, no sport change), so the only place to keep
+    // a non-workout out of Training Load is here: the wearer excludes a writing app or an exercise type,
+    // and the next import skips those sessions and removes the copies an earlier import stored.
+
+    private const val WORKOUT_EXCLUDED_APPS_KEY = "noop.hc.workoutExcludedApps"
+    private const val WORKOUT_EXCLUDED_TYPES_KEY = "noop.hc.workoutExcludedTypes"
+    private const val WORKOUT_SEEN_APPS_KEY = "noop.hc.workoutSeenApps"
+    private const val WORKOUT_SEEN_TYPES_KEY = "noop.hc.workoutSeenTypes"
+
+    /** Which exercise sessions to import: everything except the excluded writing apps and exercise types. */
+    data class WorkoutFilter(val excludedApps: Set<String> = emptySet(), val excludedTypes: Set<String> = emptySet()) {
+        fun admits(originPackage: String, type: String): Boolean =
+            originPackage !in excludedApps && type !in excludedTypes
+    }
+
+    fun workoutFilter(context: Context): WorkoutFilter = prefs(context).let {
+        WorkoutFilter(
+            it.getStringSet(WORKOUT_EXCLUDED_APPS_KEY, null)?.toSet().orEmpty(),
+            it.getStringSet(WORKOUT_EXCLUDED_TYPES_KEY, null)?.toSet().orEmpty(),
+        )
+    }
+
+    fun setWorkoutFilter(context: Context, filter: WorkoutFilter) {
+        prefs(context).edit()
+            .putStringSet(WORKOUT_EXCLUDED_APPS_KEY, filter.excludedApps)
+            .putStringSet(WORKOUT_EXCLUDED_TYPES_KEY, filter.excludedTypes)
+            .apply()
+    }
+
+    /** The writing apps (package names) and exercise types the last import found, for the filter's choices. */
+    fun seenWorkoutApps(context: Context): Set<String> =
+        prefs(context).getStringSet(WORKOUT_SEEN_APPS_KEY, null)?.toSet().orEmpty()
+
+    fun seenWorkoutTypes(context: Context): Set<String> =
+        prefs(context).getStringSet(WORKOUT_SEEN_TYPES_KEY, null)?.toSet().orEmpty()
+
+    private fun recordSeenWorkouts(context: Context, apps: Set<String>, types: Set<String>) {
+        if (apps.isEmpty() && types.isEmpty()) return
+        prefs(context).edit()
+            .putStringSet(WORKOUT_SEEN_APPS_KEY, apps)
+            .putStringSet(WORKOUT_SEEN_TYPES_KEY, types)
+            .apply()
+    }
+
+    /** The exercise type's readable label, the key the type filter stores (the title varies per session). */
+    fun exerciseTypeLabel(exerciseType: Int): String = EXERCISE_TYPE_NAMES[exerciseType] ?: "Workout"
+
     /** #1735: stamp a COMPLETED import run so the diagnostics header can say when data last moved, not
      *  merely how many rows exist. Raw keys written inline, read back by AndroidDiagnostics - the same
      *  shape `sync.lastWriteOkAt` uses. Guarded: a stamp is never worth failing an import over. */
@@ -388,6 +438,10 @@ object HealthConnectImporter {
         var hydrationReadOk: Boolean
 
         val workouts = ArrayList<WorkoutRow>()
+        val hcWorkoutFilter = workoutFilter(context)
+        val excludedWorkouts = ArrayList<WorkoutRow>()
+        val seenWorkoutApps = linkedSetOf<String>()
+        val seenWorkoutTypes = linkedSetOf<String>()
         // #1002: each workout's day key, computed at READ time while the record's own zone offset is
         // still in hand. WorkoutRow carries only epoch seconds, so re-deriving the key later would
         // silently fall back to the phone's zone and undo the fix for exactly the travelled sessions
@@ -532,6 +586,16 @@ object HealthConnectImporter {
             readSelected(ExerciseSessionRecord::class) { r ->
                 val startS = r.startTime.epochSecond
                 val endS = r.endTime.epochSecond
+                val origin = r.metadata.dataOrigin.packageName
+                val type = exerciseTypeLabel(r.exerciseType)
+                seenWorkoutApps += origin
+                seenWorkoutTypes += type
+                if (!hcWorkoutFilter.admits(origin, type)) {
+                    // Keyed as the row an earlier, unfiltered import stored, so the save below can remove it.
+                    excludedWorkouts += WorkoutRow(deviceId = HC_DEVICE, startTs = startS, endTs = endS,
+                                                   sport = exerciseName(r), source = HC_WORKOUT_SOURCE)
+                    return@readSelected
+                }
                 // #1205: read the GPS route when the provider attached one. Health Connect gates
                 // route data behind a SEPARATE permission (READ_EXERCISE_ROUTES) that cannot be
                 // requested via the standard dialog — it is granted in Settings or via
@@ -864,6 +928,9 @@ object HealthConnectImporter {
             if (workouts.isNotEmpty()) {
                 repo.upsertWorkouts(workouts)
             }
+            // Sessions the workout filter now excludes: drop the copies an earlier import stored.
+            for (row in excludedWorkouts) repo.deleteWorkout(row)
+            recordSeenWorkouts(context, seenWorkoutApps, seenWorkoutTypes)
         } catch (e: Exception) {
             return ImportSummary.failure(SOURCE, "Saving Health Connect data failed: ${e.message}")
         }

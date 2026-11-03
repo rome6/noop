@@ -137,6 +137,7 @@ fun DataSourcesScreen(vm: AppViewModel) {
     var hcReadCategories by remember {
         mutableStateOf(HealthConnectImporter.selectedCategories(context))
     }
+    var hcWorkoutFilter by remember { mutableStateOf(HealthConnectImporter.workoutFilter(context)) }
     // A background (BLE-path) writeback updates prefs, not the VM's flow — re-read on entry so the
     // status line reflects the latest attempt whenever this screen is opened (#660).
     LaunchedEffect(Unit) { vm.refreshHcWritebackStatus() }
@@ -522,6 +523,20 @@ fun DataSourcesScreen(vm: AppViewModel) {
                         HealthConnectImporter.setSelectedCategories(context, categories)
                     },
                 )
+                if (HealthConnectImporter.ImportCategory.ACTIVITY in hcReadCategories) {
+                    // Re-read after every import (busy flips back), which is what discovers the apps and types.
+                    val seenApps = remember(busy) { HealthConnectImporter.seenWorkoutApps(context) }
+                    val seenTypes = remember(busy) { HealthConnectImporter.seenWorkoutTypes(context) }
+                    HealthConnectWorkoutFilter(
+                        apps = seenApps,
+                        types = seenTypes,
+                        filter = hcWorkoutFilter,
+                        onFilterChange = { next ->
+                            hcWorkoutFilter = next
+                            HealthConnectImporter.setWorkoutFilter(context, next)
+                        },
+                    )
+                }
                 BackupButton(
                     label = uiString(R.string.l10n_data_sources_screen_import_from_health_connect_35d55e21),
                     icon = Icons.Filled.FileUpload,
