@@ -458,6 +458,10 @@
     <string name="l10n_data_sources_screen_every_3560d90b">Каждые</string>
     <string name="health_connect_categories_title">Выберите, что может читать NOOP</string>
     <string name="health_connect_categories_detail">Выберите категории Health Connect для импорта. Это можно изменить позже.</string>
+    <string name="health_connect_workout_filter_title">Импортируемые тренировки</string>
+    <string name="health_connect_workout_filter_detail">Отключите приложения или типы активности, которые не являются тренировками, например прогулки, которые Google Fit определяет сам. Применяется при следующем импорте, который также удалит уже импортированные.</string>
+    <string name="health_connect_workout_filter_apps">Из этих приложений</string>
+    <string name="health_connect_workout_filter_types">Типы активности</string>
     <string name="health_connect_category_recovery">Восстановление и самочувствие</string>
     <string name="health_connect_category_recovery_detail">Пульс, ВСР, сон, SpO₂, дыхание и гидратация</string>
     <string name="health_connect_category_activity">Активность</string>

@@ -372,6 +372,10 @@
     <string name="l10n_data_sources_screen_health_connect_be6bca3e">Health Connect</string>
     <string name="health_connect_categories_title">选择 NOOP 可读取的内容</string>
     <string name="health_connect_categories_detail">选择要导入的 Health Connect 类别。稍后可随时更改。</string>
+    <string name="health_connect_workout_filter_title">要导入的训练</string>
+    <string name="health_connect_workout_filter_detail">关闭不属于训练的应用或活动类型，例如 Google Fit 自动识别的步行。下次导入时生效，并会移除已导入的此类记录。</string>
+    <string name="health_connect_workout_filter_apps">来自这些应用</string>
+    <string name="health_connect_workout_filter_types">活动类型</string>
     <string name="health_connect_category_recovery">恢复与健康</string>
     <string name="health_connect_category_recovery_detail">心率、HRV、睡眠、SpO₂、呼吸和饮水</string>
     <string name="health_connect_category_activity">活动</string>

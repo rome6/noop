@@ -479,6 +479,10 @@
     <string name="l10n_data_sources_screen_health_connect_be6bca3e">Health Connect</string>
     <string name="health_connect_categories_title">Scegli cosa può leggere NOOP</string>
     <string name="health_connect_categories_detail">Seleziona le categorie di Health Connect da importare. Puoi cambiarle in seguito.</string>
+    <string name="health_connect_workout_filter_title">Allenamenti da importare</string>
+    <string name="health_connect_workout_filter_detail">Disattiva le app o i tipi di attività che non sono allenamento, come le camminate che Google Fit rileva da solo. Vale dalla prossima importazione, che rimuove anche quelli già importati.</string>
+    <string name="health_connect_workout_filter_apps">Da queste app</string>
+    <string name="health_connect_workout_filter_types">Tipi di attività</string>
     <string name="health_connect_category_recovery">Recupero e benessere</string>
     <string name="health_connect_category_recovery_detail">Frequenza cardiaca, HRV, sonno, SpO₂, respirazione e idratazione</string>
     <string name="health_connect_category_activity">Attività</string>
