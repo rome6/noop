@@ -129,5 +129,12 @@ jobs:
       - name: Verify packaged Swift core resources
         run: python3 swift-core/check-apk-resources.py app/build/outputs/apk/full/debug/*.apk app/build/outputs/apk/demo/debug/*.apk
 
+      - name: Upload the test APK
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: noop-full-debug-apk
+          path: android/app/build/outputs/apk/full/debug/*.apk
+          retention-days: 7
+
       - name: Run unit tests
         run: ./gradlew testFullDebugUnitTest
